@@ -10,7 +10,7 @@ const ESP32_IP = "192.168.1.215";
 export default function IrrigationSystem() {
   const [valves, setValves] = useState(() => {
     const savedValves = localStorage.getItem("valvesState");
-    // Modificat de la 8 la 16 valve
+
     return savedValves ? JSON.parse(savedValves) : Array(16).fill(false);
   });
 
