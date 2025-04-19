@@ -6,7 +6,7 @@ import "./styles.css";
 
 const ESP32_CONTROLLERS = [
   { ip: "91.212.45.133:8081", startIndex: 0, endIndex: 15 },
-  { ip: "91.212.45.133:8082", startIndex: 16, endIndex: 31 },
+  { ip: "91.212.45.133:8082", startIndex: 16, endIndex: 31 }, //da
 ];
 const getControllerForValve = (index) =>
   ESP32_CONTROLLERS.find((c) => index >= c.startIndex && index <= c.endIndex);
