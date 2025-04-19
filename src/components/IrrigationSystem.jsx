@@ -5,9 +5,10 @@ import TimerControl from "./TimerControl";
 import "./styles.css";
 
 const ESP32_CONTROLLERS = [
-  { ip: "86.120.249.116:8081", startIndex: 0, endIndex: 15 },
-  { ip: "86.120.249.116:8082", startIndex: 16, endIndex: 31 }, //da
+  { ip: "192.168.1.215:80", startIndex: 0, endIndex: 15 },
+  { ip: "192.168.1.214", startIndex: 16, endIndex: 31 },
 ];
+
 const getControllerForValve = (index) =>
   ESP32_CONTROLLERS.find((c) => index >= c.startIndex && index <= c.endIndex);
 
