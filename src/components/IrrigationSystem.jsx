@@ -5,7 +5,7 @@ import TimerControl from "./TimerControl";
 import "./styles.css";
 
 const ESP32_CONTROLLERS = [
-  { ip: "192.168.1.215:80", startIndex: 0, endIndex: 15 },
+  { ip: "192.168.1.150", startIndex: 0, endIndex: 15 },
   { ip: "192.168.1.214", startIndex: 16, endIndex: 31 },
 ];
 
@@ -30,7 +30,9 @@ export default function IrrigationSystem() {
 
     try {
       await fetch(
-        `http://${controller.ip}/toggle?index=${localIndex}&state=${state ? 1 : 0}`
+        `http://${controller.ip}/toggle?index=${localIndex}&state=${
+          state ? 1 : 0
+        }`
       );
     } catch (error) {
       console.error(`Eroare la ESP (${controller.ip}):`, error);
@@ -119,9 +121,7 @@ export default function IrrigationSystem() {
   const fetchValveStatus = async () => {
     try {
       const responses = await Promise.all(
-        ESP32_CONTROLLERS.map((c) =>
-          fetch(`http://${c.ip}/valve-status`)
-        )
+        ESP32_CONTROLLERS.map((c) => fetch(`http://${c.ip}/valve-status`))
       );
       const data = await Promise.all(responses.map((res) => res.json()));
       const combined = data.map((d) => d.valves.map((v) => v === 1)).flat();
@@ -151,22 +151,51 @@ export default function IrrigationSystem() {
 
       <AreaControl allOn={allOn} toggleAllValves={toggleAllValves} />
 
-      <div style={{
-        margin: "10px auto",
-        padding: "10px",
-        border: "1px solid #007bff",
-        borderRadius: "8px",
-        maxWidth: "400px",
-        textAlign: "center",
-        backgroundColor: "#f0f8ff",
-        color: "#007bff",
-        fontWeight: "bold",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-          {programStatus === "running-master" && (<><span>🔵</span><span>Rulează Master...</span></>)}
-          {programStatus === "running-slave" && (<><span>🟣</span><span>Rulează Slave...</span></>)}
-          {programStatus === "done" && (<><span>✅</span><span>Program finalizat complet!</span></>)}
-          {programStatus === "idle" && (<><span>🔴</span><span>Niciun program activ.</span></>)}
+      <div
+        style={{
+          margin: "10px auto",
+          padding: "10px",
+          border: "1px solid #007bff",
+          borderRadius: "8px",
+          maxWidth: "400px",
+          textAlign: "center",
+          backgroundColor: "#f0f8ff",
+          color: "#007bff",
+          fontWeight: "bold",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+          }}
+        >
+          {programStatus === "running-master" && (
+            <>
+              <span>🔵</span>
+              <span>Rulează Master...</span>
+            </>
+          )}
+          {programStatus === "running-slave" && (
+            <>
+              <span>🟣</span>
+              <span>Rulează Slave...</span>
+            </>
+          )}
+          {programStatus === "done" && (
+            <>
+              <span>✅</span>
+              <span>Program finalizat complet!</span>
+            </>
+          )}
+          {programStatus === "idle" && (
+            <>
+              <span>🔴</span>
+              <span>Niciun program activ.</span>
+            </>
+          )}
         </div>
 
         <button
