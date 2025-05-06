@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import "./styles.css";
 
 export default function TimerControl({
+  title,
   startTimes,
   setStartTimes,
   stopTime,
@@ -88,15 +89,12 @@ export default function TimerControl({
         marginBottom: "20px",
       }}
     >
-      <h3>Setare Timer Manuală</h3>
+      <h3>{title}</h3>
 
       <div style={{ marginBottom: "10px" }}>
         <label>
           Adaugă oră de pornire:{" "}
-          <input
-            type="time"
-            onChange={(e) => addStartTime(e.target.value)}
-          />
+          <input type="time" onChange={(e) => addStartTime(e.target.value)} />
         </label>
 
         <ul style={{ listStyle: "none", padding: 0 }}>

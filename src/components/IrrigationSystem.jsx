@@ -5,8 +5,8 @@ import TimerControl from "./TimerControl";
 import "./styles.css";
 
 const ESP32_CONTROLLERS = [
-  { ip: "192.168.1.150", startIndex: 0, endIndex: 15 },
-  { ip: "192.168.1.214", startIndex: 16, endIndex: 31 },
+  { ip: "192.168.0.178", startIndex: 0, endIndex: 15 },
+  { ip: "192.168.0.65", startIndex: 16, endIndex: 31 },
 ];
 
 const getControllerForValve = (index) =>
@@ -18,8 +18,18 @@ export default function IrrigationSystem() {
     return saved ? JSON.parse(saved) : Array(32).fill(false);
   });
 
-  const [startTimes, setStartTimes] = useState([]);
-  const [stopTime, setStopTime] = useState("");
+  const [startTimesEsp1, setStartTimesEsp1] = useState(() => {
+    const saved = localStorage.getItem("startTimesEsp1");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [startTimesEsp2, setStartTimesEsp2] = useState(() => {
+    const saved = localStorage.getItem("startTimesEsp2");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [stopTimeEsp1, setStopTimeEsp1] = useState("");
+  const [stopTimeEsp2, setStopTimeEsp2] = useState("");
   const [programStatus, setProgramStatus] = useState("idle");
   const [timeoutId, setTimeoutId] = useState(null);
   const allOn = valves.every((valve) => valve);
@@ -48,47 +58,33 @@ export default function IrrigationSystem() {
     }
   }, []);
 
-  const runSequentialProgram = async (secondsPerValve = 5) => {
+  const runSequentialProgram = async (secondsPerValve, controller) => {
     try {
       const durationMs = secondsPerValve * 1000;
-      const masterIP = ESP32_CONTROLLERS[0].ip;
-      const slaveIP = ESP32_CONTROLLERS[1].ip;
+      const { ip, startIndex, endIndex } = controller;
 
-      const masterValveCount =
-        ESP32_CONTROLLERS[0].endIndex - ESP32_CONTROLLERS[0].startIndex + 1;
-      const slaveValveCount =
-        ESP32_CONTROLLERS[1].endIndex - ESP32_CONTROLLERS[1].startIndex + 1;
+      setProgramStatus(`running-${startIndex}-${endIndex}`);
+      await fetch(`http://${ip}/program?duration=${secondsPerValve}`);
+      console.log(`🚀 Controller ${ip} started`);
 
-      const totalMasterDuration = durationMs * masterValveCount;
-      const totalSlaveDuration = durationMs * slaveValveCount;
+      const timeout = setTimeout(() => {
+        setProgramStatus("done");
+        setTimeoutId(null);
+      }, (endIndex - startIndex + 1) * durationMs + 2000);
 
-      setProgramStatus("running-master");
-      await fetch(`http://${masterIP}/program?duration=${secondsPerValve}`);
-      console.log("🚀 Master started");
-
-      const masterTimeout = setTimeout(async () => {
-        setProgramStatus("running-slave");
-        await fetch(`http://${slaveIP}/program?duration=${secondsPerValve}`);
-        console.log("🚀 Slave started");
-
-        const slaveTimeout = setTimeout(() => {
-          setProgramStatus("done");
-          setTimeoutId(null);
-        }, totalSlaveDuration + 2000);
-
-        setTimeoutId(slaveTimeout);
-      }, totalMasterDuration + 2000);
-
-      setTimeoutId(masterTimeout);
+      setTimeoutId(timeout);
     } catch (error) {
-      console.error("❌ Eroare la programul secvențial:", error);
+      console.error("❌ Eroare la program:", error);
       setProgramStatus("idle");
     }
   };
 
-  const runScheduledProgram = (duration) => {
-    setProgramStatus("idle");
-    runSequentialProgram(duration);
+  const runScheduledProgramEsp1 = (duration) => {
+    runSequentialProgram(duration, ESP32_CONTROLLERS[0]);
+  };
+
+  const runScheduledProgramEsp2 = (duration) => {
+    runSequentialProgram(duration, ESP32_CONTROLLERS[1]);
   };
 
   const stopProgram = async () => {
@@ -111,13 +107,6 @@ export default function IrrigationSystem() {
     alert("⛔ Programul a fost oprit manual.");
   };
 
-  const resetTimer = () => {
-    setStartTimes([]);
-    setStopTime("");
-    setProgramStatus("idle");
-    if (timeoutId) clearTimeout(timeoutId);
-  };
-
   const fetchValveStatus = async () => {
     try {
       const responses = await Promise.all(
@@ -137,16 +126,44 @@ export default function IrrigationSystem() {
     return () => clearInterval(interval);
   }, []);
 
+  // 🔵 Salvăm automat startTimesEsp1 când se schimbă
+  useEffect(() => {
+    localStorage.setItem("startTimesEsp1", JSON.stringify(startTimesEsp1));
+  }, [startTimesEsp1]);
+
+  // 🔵 Salvăm automat startTimesEsp2 când se schimbă
+  useEffect(() => {
+    localStorage.setItem("startTimesEsp2", JSON.stringify(startTimesEsp2));
+  }, [startTimesEsp2]);
+
   return (
     <div>
       <TimerControl
-        startTimes={startTimes}
-        setStartTimes={setStartTimes}
-        stopTime={stopTime}
-        onStopTimeChange={setStopTime}
-        allOn={allOn}
-        resetTimer={resetTimer}
-        runScheduledProgram={runScheduledProgram}
+        title="Setare Timer Manuală ESP1"
+        startTimes={startTimesEsp1}
+        setStartTimes={setStartTimesEsp1}
+        stopTime={stopTimeEsp1}
+        onStopTimeChange={setStopTimeEsp1}
+        allOn={valves.slice(0, 16).every((v) => v)}
+        resetTimer={() => {
+          setStartTimesEsp1([]);
+          localStorage.removeItem("startTimesEsp1");
+        }}
+        runScheduledProgram={runScheduledProgramEsp1}
+      />
+
+      <TimerControl
+        title="Setare Timer Manuală ESP2"
+        startTimes={startTimesEsp2}
+        setStartTimes={setStartTimesEsp2}
+        stopTime={stopTimeEsp2}
+        onStopTimeChange={setStopTimeEsp2}
+        allOn={valves.slice(16, 32).every((v) => v)}
+        resetTimer={() => {
+          setStartTimesEsp2([]);
+          localStorage.removeItem("startTimesEsp2");
+        }}
+        runScheduledProgram={runScheduledProgramEsp2}
       />
 
       <AreaControl allOn={allOn} toggleAllValves={toggleAllValves} />
@@ -172,22 +189,16 @@ export default function IrrigationSystem() {
             gap: "10px",
           }}
         >
-          {programStatus === "running-master" && (
+          {programStatus.includes("running") && (
             <>
-              <span>🔵</span>
-              <span>Rulează Master...</span>
-            </>
-          )}
-          {programStatus === "running-slave" && (
-            <>
-              <span>🟣</span>
-              <span>Rulează Slave...</span>
+              <span>🚀</span>
+              <span>Rulează program...</span>
             </>
           )}
           {programStatus === "done" && (
             <>
               <span>✅</span>
-              <span>Program finalizat complet!</span>
+              <span>Program finalizat!</span>
             </>
           )}
           {programStatus === "idle" && (
