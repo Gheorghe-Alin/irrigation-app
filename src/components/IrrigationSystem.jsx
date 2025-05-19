@@ -5,8 +5,8 @@ import TimerControl from "./TimerControl";
 import "./styles.css";
 
 const ESP32_CONTROLLERS = [
-  { ip: "192.168.0.178", startIndex: 0, endIndex: 15 },
-  { ip: "192.168.0.65", startIndex: 16, endIndex: 31 },
+  { ip: "192.168.1.101", startIndex: 0, endIndex: 15 },
+  { ip: "192.168.1.150", startIndex: 16, endIndex: 31 },
 ];
 
 const getControllerForValve = (index) =>
@@ -126,15 +126,13 @@ export default function IrrigationSystem() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🔵 Salvăm automat startTimesEsp1 când se schimbă
-  useEffect(() => {
-    localStorage.setItem("startTimesEsp1", JSON.stringify(startTimesEsp1));
-  }, [startTimesEsp1]);
+  // useEffect(() => {
+  //   localStorage.setItem("startTimesEsp1", JSON.stringify(startTimesEsp1));
+  // }, [startTimesEsp1]);
 
-  // 🔵 Salvăm automat startTimesEsp2 când se schimbă
-  useEffect(() => {
-    localStorage.setItem("startTimesEsp2", JSON.stringify(startTimesEsp2));
-  }, [startTimesEsp2]);
+  // useEffect(() => {
+  //   localStorage.setItem("startTimesEsp2", JSON.stringify(startTimesEsp2));
+  // }, [startTimesEsp2]);
 
   return (
     <div>
