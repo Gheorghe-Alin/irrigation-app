@@ -5,7 +5,7 @@ import TimerControl from "./TimerControl";
 import "./styles.css";
 
 const ESP32_CONTROLLERS = [
-  { ip: "192.168.1.101", startIndex: 0, endIndex: 15 },
+  { ip: "192.168.1.100", startIndex: 0, endIndex: 15 },
   { ip: "192.168.1.150", startIndex: 16, endIndex: 31 },
 ];
 
