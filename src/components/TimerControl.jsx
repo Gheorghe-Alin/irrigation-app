@@ -13,30 +13,25 @@ export default function TimerControl({
   const [duration, setDuration] = useState("");
   const [programScheduled, setProgramScheduled] = useState(false);
   const timeoutsRef = useRef([]);
-  const timeInputRef = useRef(null);
   const [selectedDays, setSelectedDays] = useState([]);
+  const [hour, setHour] = useState("07");
+  const [minute, setMinute] = useState("00");
 
-  // Încarcă durata din localStorage
+  const getFormattedTime = () => `${hour}:${minute}`;
+
   useEffect(() => {
     const saved = localStorage.getItem("valveDuration");
-    if (saved) {
-      setDuration(saved);
-    }
+    if (saved) setDuration(saved);
   }, []);
 
-  // Salvează durata când se schimbă
   useEffect(() => {
-    if (duration) {
-      localStorage.setItem("valveDuration", duration);
-    }
+    if (duration) localStorage.setItem("valveDuration", duration);
   }, [duration]);
 
-  // Reprogramează automat la pornire dacă avem programări și durată
   useEffect(() => {
     const storageKey = title.includes("ESP1")
       ? "startTimesEsp1"
       : "startTimesEsp2";
-
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -54,9 +49,11 @@ export default function TimerControl({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration]);
 
+  const isValidTime = (time) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+
   const addStartTime = (newTime) => {
-    if (!newTime || selectedDays.length === 0) {
-      alert("Selectează o oră și cel puțin o zi.");
+    if (!isValidTime(newTime) || selectedDays.length === 0) {
+      alert("Introdu un format valid (HH:MM) și selectează cel puțin o zi.");
       return;
     }
 
@@ -73,7 +70,6 @@ export default function TimerControl({
     }
 
     setSelectedDays([]);
-    if (timeInputRef.current) timeInputRef.current.value = "";
   };
 
   const removeStartTime = (index) => {
@@ -126,11 +122,9 @@ export default function TimerControl({
     for (const entry of startTimes) {
       for (const day of entry.days) {
         const delay = getDelayUntilNext(day, entry.time);
-
         const timeoutId = setTimeout(() => {
           runScheduledProgram(Number(duration));
         }, delay);
-
         timeoutsRef.current.push(timeoutId);
       }
     }
@@ -148,21 +142,17 @@ export default function TimerControl({
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
     setProgramScheduled(false);
-
     setStartTimes([]);
+
     localStorage.removeItem(
       title.includes("ESP1") ? "startTimesEsp1" : "startTimesEsp2"
     );
 
-    if (timeInputRef.current) timeInputRef.current.value = "";
     setSelectedDays([]);
-
     alert("❌ Toate programările au fost anulate și resetate.");
   };
 
   const handleReset = () => {
-    // NU afectează programările salvate
-    if (timeInputRef.current) timeInputRef.current.value = "";
     setSelectedDays([]);
   };
 
@@ -180,15 +170,61 @@ export default function TimerControl({
       <h3>{title}</h3>
 
       <div style={{ marginBottom: "10px" }}>
-        <label>
-          Adaugă oră de pornire:{" "}
-          <input
-            type="time"
-            ref={timeInputRef}
-            id="time-input"
-            onChange={(e) => addStartTime(e.target.value)}
-          />
-        </label>
+        <label>Adaugă oră de pornire:</label>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            justifyContent: "center",
+            marginTop: "5px",
+          }}
+        >
+          <select
+            value={hour}
+            onChange={(e) => setHour(e.target.value)}
+            style={{ padding: "4px", fontSize: "16px", borderRadius: "4px" }}
+          >
+            {[...Array(24)].map((_, i) => {
+              const val = String(i).padStart(2, "0");
+              return (
+                <option key={val} value={val}>
+                  {val}
+                </option>
+              );
+            })}
+          </select>
+          :
+          <select
+            value={minute}
+            onChange={(e) => setMinute(e.target.value)}
+            style={{ padding: "4px", fontSize: "16px", borderRadius: "4px" }}
+          >
+            {[...Array(60)].map((_, i) => {
+              const val = String(i).padStart(2, "0");
+              return (
+                <option key={val} value={val}>
+                  {val}
+                </option>
+              );
+            })}
+          </select>
+          <button
+            onClick={() => addStartTime(getFormattedTime())}
+            style={{
+              marginLeft: "10px",
+              background: "#28a745",
+              color: "white",
+              border: "none",
+              padding: "6px 10px",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            ➕ Adaugă
+          </button>
+        </div>
 
         <DaySelector
           selectedDays={selectedDays}
